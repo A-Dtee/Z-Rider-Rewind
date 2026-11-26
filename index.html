@@ -56,6 +56,7 @@ body{
   font:700 13px var(--font);border-radius:999px;min-height:38px;min-width:38px;padding:0 12px;cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;gap:4px}
 .chip.icon{padding:0}
+.chip[hidden]{display:none}
 .chip svg{width:16px;height:16px;fill:currentColor}
 .lang span{opacity:.6}
 .lang span.on{opacity:1;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
@@ -238,6 +239,7 @@ body{
     <div class="brand" aria-hidden="true">zomato<small>Rider Rewind</small></div>
     <div class="controls">
       <button class="chip lang" id="langBtn" type="button"></button>
+      <button class="chip icon" id="soundBtn" type="button"></button>
       <button class="chip icon" id="pauseBtn" type="button"></button>
     </div>
   </div>
@@ -249,6 +251,8 @@ body{
   <div class="paused-badge" id="pausedBadge" aria-hidden="true"></div>
   <div class="sr-only" id="live" aria-live="polite"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <!-- Background music (served next to this file). Starts on first tap: browsers block autoplay with sound. -->
+  <audio id="bgm" src="music.m4a" loop preload="auto"></audio>
 </main>
 
 <script>
@@ -502,6 +506,8 @@ const STR = {
   'ui.next':       { en:'Next slide', hi:'Agli slide' },
   'ui.paused':     { en:'❚❚ Paused', hi:'❚❚ Ruka hua' },
   'ui.story':      { en:'Your Rider Rewind story', hi:'Aapki Rider Rewind story' },
+  'ui.mute':       { en:'Mute music', hi:'Music band karein' },
+  'ui.unmute':     { en:'Play music', hi:'Music chalayein' },
 
   'intro.kicker':  { en:'Rider Rewind', hi:'Rider Rewind' },
   'intro.title':   { en:'Your {year} on Zomato', hi:'Aapka {year}, Zomato ke saath' },
@@ -988,6 +994,7 @@ function updateChrome() {
   $('pausedBadge').textContent = t('ui.paused');
   app.setAttribute('aria-label', t('ui.story'));
   updatePauseBtn();
+  updateSoundBtn();
 }
 
 /* Tap zones: quick tap = navigate, press-and-hold = pause while held. */
@@ -1116,6 +1123,59 @@ function toast(msg) {
   el.textContent = msg; el.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
 }
+
+/* =====================================================================
+   7. BACKGROUND MUSIC
+   Browsers only allow audio after a user gesture, so music fades in on
+   the first tap / key press. The mute choice is remembered per device.
+   ===================================================================== */
+const bgm = $('bgm');
+const MUSIC_VOL = 0.5;
+let musicOn = (() => { try { return localStorage.getItem('rr-music') !== 'off'; } catch (e) { return true; } })();
+let musicStarted = false, fadeTimer = null;
+
+function fadeTo(target, ms) {
+  clearInterval(fadeTimer);
+  const from = bgm.volume, t0 = performance.now();
+  fadeTimer = setInterval(() => {
+    const p = Math.min(1, (performance.now() - t0) / ms);
+    bgm.volume = from + (target - from) * p;
+    if (p >= 1) { clearInterval(fadeTimer); if (target === 0) bgm.pause(); }
+  }, 30);
+}
+function playMusic() {
+  if (!musicOn || document.hidden) return;
+  if (bgm.paused) bgm.volume = 0;
+  const p = bgm.play();
+  if (p && p.catch) p.catch(() => {});          // still blocked or file missing: stay silent
+  fadeTo(MUSIC_VOL, 1200);
+}
+function updateSoundBtn() {
+  const on = musicOn && musicStarted, b = $('soundBtn');
+  b.setAttribute('aria-label', t(on ? 'ui.mute' : 'ui.unmute'));
+  b.innerHTML = on
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 5V4L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 5V4L8 9H4zm16.6 3 2.1-2.1-1.4-1.4-2.1 2.1-2.1-2.1-1.4 1.4 2.1 2.1-2.1 2.1 1.4 1.4 2.1-2.1 2.1 2.1 1.4-1.4z"/></svg>';
+}
+function firstGesture(e) {
+  if (musicStarted || (e.target.closest && e.target.closest('#soundBtn'))) return;
+  musicStarted = true;
+  ['pointerup', 'keydown'].forEach(ev => document.removeEventListener(ev, firstGesture, true));
+  playMusic(); updateSoundBtn();
+}
+['pointerup', 'keydown'].forEach(ev => document.addEventListener(ev, firstGesture, true));
+
+$('soundBtn').addEventListener('click', () => {
+  if (!musicStarted) { musicStarted = true; musicOn = true; } else musicOn = !musicOn;
+  try { localStorage.setItem('rr-music', musicOn ? 'on' : 'off'); } catch (e) {}
+  musicOn ? playMusic() : fadeTo(0, 400);
+  updateSoundBtn();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { clearInterval(fadeTimer); bgm.pause(); }
+  else if (musicStarted) playMusic();
+});
+bgm.addEventListener('error', () => { $('soundBtn').hidden = true; });   // no music file: hide the button
 
 /* =====================================================================
    BOOT
