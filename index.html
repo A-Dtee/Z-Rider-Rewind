@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E23744">
+<title>Rider Rewind 2026</title>
+<!-- Optional web font. Everything falls back to system fonts when offline. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   BASE
+   ===================================================================== */
+:root{
+  --red:#E23744;
+  --font:'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:#0c0507;font-family:var(--font);color:#fff;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Phone-sized story frame. Full-bleed on mobile, framed "device" on desktop. */
+.app{
+  --chrome:#fff;--track:rgba(255,255,255,.3);
+  position:relative;width:100%;max-width:430px;height:100vh;height:100dvh;overflow:hidden;
+  background:#111;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  touch-action:manipulation;transition:background-color .5s;
+}
+@media (min-width:600px){
+  body{background:radial-gradient(circle at 30% 20%,#3a0c14,#0c0507 60%)}
+  .app{height:min(calc(100dvh - 48px),860px);border-radius:28px;
+       box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+}
+
+/* =====================================================================
+   CHROME: progress bar, top bar, tap zones
+   ===================================================================== */
+.progress{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;gap:4px;
+  padding:calc(10px + env(safe-area-inset-top)) 12px 0;pointer-events:none}
+.seg{flex:1;height:3px;border-radius:3px;background:var(--track);overflow:hidden}
+.seg i{display:block;height:100%;background:var(--chrome);transform-origin:left;transform:scaleX(0)}
+
+.topbar{position:absolute;top:calc(22px + env(safe-area-inset-top));left:0;right:0;z-index:5;
+  display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 18px;color:var(--chrome)}
+.brand{font-weight:900;font-size:17px;letter-spacing:-.03em;line-height:1}
+.brand small{display:block;font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-top:3px}
+.controls{display:flex;gap:8px}
+.chip{appearance:none;border:1.5px solid var(--chrome);background:transparent;color:var(--chrome);
+  font:700 13px var(--font);border-radius:999px;min-height:38px;min-width:38px;padding:0 12px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.chip.icon{padding:0}
+.chip svg{width:16px;height:16px;fill:currentColor}
+.lang span{opacity:.6}
+.lang span.on{opacity:1;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.chip:focus-visible,.btn:focus-visible,.tap:focus-visible{outline:3px solid #FFD23F;outline-offset:2px}
+.tap:focus-visible{outline-offset:-6px}
+
+.tap{position:absolute;top:0;bottom:0;z-index:1;border:0;background:transparent;cursor:pointer}
+.tap-prev{left:0;width:30%}
+.tap-next{right:0;width:70%}
+
+.paused-badge{position:absolute;z-index:6;left:50%;top:calc(70px + env(safe-area-inset-top));
+  transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-weight:700;font-size:14px;
+  padding:6px 14px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none}
+.app.is-paused .paused-badge{opacity:1}
+
+/* =====================================================================
+   SLIDES
+   ===================================================================== */
+.stage{position:absolute;inset:0;z-index:2;pointer-events:none}
+.stage .interactive{pointer-events:auto}
+.slide{
+  position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:14px;
+  padding:calc(88px + env(safe-area-inset-top)) 26px calc(40px + env(safe-area-inset-bottom));
+  background:linear-gradient(165deg,var(--bg1) 0%,var(--bg2) 100%);color:var(--ink);overflow:hidden;
+}
+.slide > *:not(.blob):not(.confetti):not(.spark){position:relative;z-index:1}
+
+.kicker{font-weight:800;font-size:15px;letter-spacing:.12em;text-transform:uppercase}
+.big{font-weight:900;line-height:.95;letter-spacing:-.04em;white-space:nowrap;
+  font-variant-numeric:tabular-nums;color:var(--accent);font-size:96px}
+.fit{align-self:flex-start;width:max-content;max-width:100%}
+.unit{font-weight:800;font-size:26px;line-height:1.15;letter-spacing:-.01em;margin-top:-6px}
+.title{font-weight:900;font-size:36px;line-height:1.05;letter-spacing:-.03em}
+.line{font-weight:600;font-size:19px;line-height:1.4;max-width:34ch}
+.compare{margin-top:6px;padding:16px 18px;border-radius:20px;background:var(--card);
+  font-weight:700;font-size:19px;line-height:1.38;display:flex;gap:12px;align-items:flex-start}
+.compare .emo{font-size:28px;line-height:1.1;flex:none}
+.hint{font-weight:700;font-size:16px;margin-top:10px;opacity:.9}
+.tagline{font-weight:800;font-size:22px;line-height:1.3;color:var(--accent)}
+
+/* Decorative blobs and sparkles */
+.blob{position:absolute;border-radius:50%;pointer-events:none;width:340px;height:340px;
+  background:radial-gradient(circle at 35% 35%,var(--blob),transparent 68%);opacity:.6;
+  animation:float 9s ease-in-out infinite alternate}
+.blob.b1{top:-120px;right:-140px}
+.blob.b2{bottom:-150px;left:-160px;animation-duration:12s;opacity:.4}
+@keyframes float{to{transform:translate(24px,-30px) scale(1.12)}}
+.spark{position:absolute;pointer-events:none;color:var(--accent);font-size:20px;
+  animation:twinkle 2.6s ease-in-out infinite;animation-delay:var(--dl,0s)}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(.6) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(45deg)}}
+
+/* Entrance animations for slide content */
+.rise{opacity:0;animation:rise .75s cubic-bezier(.2,.9,.2,1) forwards;animation-delay:var(--d,0s)}
+.pop{animation-name:pop;animation-duration:.8s}
+@keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{opacity:0;transform:scale(.5)}60%{opacity:1;transform:scale(1.08)}100%{opacity:1;transform:none}}
+.slide.static *{animation:none!important}
+.slide.static .rise{opacity:1}
+
+/* Slide-to-slide transitions */
+.slide.in-next{animation:inNext .55s cubic-bezier(.2,.9,.2,1)}
+.slide.in-prev{animation:inPrev .55s cubic-bezier(.2,.9,.2,1)}
+.slide.out-next{animation:outNext .45s ease forwards;z-index:0}
+.slide.out-prev{animation:outPrev .45s ease forwards;z-index:0}
+@keyframes inNext{from{transform:translateX(45%) scale(.9);opacity:0}}
+@keyframes inPrev{from{transform:translateX(-45%) scale(.9);opacity:0}}
+@keyframes outNext{to{transform:translateX(-25%) scale(.88);opacity:0}}
+@keyframes outPrev{to{transform:translateX(25%) scale(.88);opacity:0}}
+
+/* Confetti */
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-24px;width:8px;height:14px;border-radius:2px;
+  animation:fall var(--t,3s) cubic-bezier(.25,.6,.45,1) var(--dl,0s) forwards}
+@keyframes fall{to{transform:translate(var(--dx,0),920px) rotate(var(--r,540deg))}}
+
+/* Earnings split bar */
+.split{display:flex;height:16px;border-radius:999px;overflow:hidden;background:var(--card);margin-top:4px}
+.split span{height:100%;transform-origin:left;animation:grow 1s .7s cubic-bezier(.2,.9,.2,1) backwards}
+@keyframes grow{from{transform:scaleX(0)}}
+.legend{display:grid;gap:8px}
+.legend div{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:17px}
+.legend .dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:10px;vertical-align:-1px}
+.legend b{font-weight:800;font-variant-numeric:tabular-nums}
+
+/* Tiles (best day, rating) */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--card);border-radius:18px;padding:14px 16px;min-width:0}
+.tile b{display:block;font-size:30px;font-weight:900;letter-spacing:-.02em;color:var(--accent);
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.tile span{font-weight:700;font-size:15px;line-height:1.3;display:block}
+
+/* Hour-of-day chart */
+.hours{display:flex;align-items:flex-end;gap:3px;height:104px;margin-top:4px}
+.hours span{flex:1;border-radius:4px 4px 1px 1px;background:var(--ink);opacity:.3;transform-origin:bottom;
+  animation:growY .8s cubic-bezier(.2,.9,.2,1) backwards;animation-delay:calc(var(--i) * 25ms + .5s)}
+.hours span.peak{background:var(--accent);opacity:1}
+@keyframes growY{from{transform:scaleY(0)}}
+.hours-axis{display:flex;justify-content:space-between;font-size:13px;font-weight:700}
+.persona-emoji{font-size:64px;line-height:1}
+.persona-name{font-weight:900;font-size:46px;line-height:1;letter-spacing:-.03em;color:var(--accent)}
+
+/* Food podium */
+.podium{list-style:none;display:grid;gap:10px}
+.podium li{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:18px;background:var(--card)}
+.podium .rank{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;
+  font-weight:900;font-size:18px;background:var(--ink);color:var(--bg1)}
+.podium li:first-child .rank{background:var(--accent);color:#fff}
+.podium .name{font-weight:800;font-size:19px;line-height:1.2;flex:1;min-width:0;overflow-wrap:anywhere}
+.podium .cnt{font-weight:700;font-size:15px;white-space:nowrap}
+
+/* Stars */
+.stars{position:relative;display:inline-block;font-size:26px;letter-spacing:3px;line-height:1;margin-top:6px}
+.stars .base{opacity:.3}
+.stars .fill{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:var(--accent);width:var(--w)}
+
+/* =====================================================================
+   SUMMARY CARD
+   ===================================================================== */
+.slide.summary{gap:14px}
+.card{border-radius:26px;padding:20px 18px 16px;background:linear-gradient(150deg,#D42A40 0%,#8E1023 100%);
+  color:#fff;overflow:hidden;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.card .ring{position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;
+  border:28px solid rgba(255,255,255,.08)}
+.card .ch{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:12px;
+  letter-spacing:.12em;text-transform:uppercase}
+.card h2{font-size:27px;font-weight:900;line-height:1.05;letter-spacing:-.02em;margin-top:10px}
+.card .who{font-weight:700;font-size:15px;margin-top:4px}
+.card .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.card .cell{background:rgba(0,0,0,.2);border-radius:16px;padding:10px 12px;min-width:0}
+.card .cell.wide{grid-column:span 2}
+.card .cell b{display:block;font-size:23px;font-weight:900;letter-spacing:-.02em;white-space:nowrap;line-height:1.15}
+.card .cell.hero b{font-size:34px;color:#FFE27A}
+.card .cell span{font-size:13px;font-weight:700}
+.card .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.card .tags span{background:rgba(255,255,255,.16);border-radius:999px;padding:6px 11px;font-weight:700;font-size:13px}
+.card .foot{margin-top:12px;display:flex;justify-content:space-between;font-weight:800;font-size:13px}
+.actions{display:flex;gap:10px}
+.btn{flex:1;min-height:52px;border-radius:999px;border:0;font:800 18px var(--font);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn svg{width:20px;height:20px;fill:currentColor}
+.btn.primary{background:#E23744;color:#fff}
+.btn.ghost{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.6)}
+.btn.link{flex:none;min-height:40px;background:none;color:#fff;font-size:16px;text-decoration:underline;text-underline-offset:4px;align-self:center}
+.btn[disabled]{opacity:.6;cursor:progress}
+
+.toast{position:absolute;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:10;
+  transform:translate(-50%,20px);background:#111;color:#fff;padding:12px 18px;border-radius:14px;
+  font-weight:700;font-size:15px;opacity:0;transition:.3s;pointer-events:none;width:max-content;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* Short phones (e.g. iPhone SE) */
+@media (max-height:720px){
+  .slide{padding-top:calc(76px + env(safe-area-inset-top));padding-bottom:24px;gap:10px}
+  .line,.compare{font-size:17px}
+  .compare{padding:12px 14px}
+  .title{font-size:30px}
+  .unit{font-size:22px}
+  .persona-emoji{font-size:48px}
+  .hours{height:80px}
+  .card{padding:16px 16px 12px}
+  .card h2{font-size:23px;margin-top:6px}
+  .card .grid{margin-top:10px;gap:6px}
+  .card .cell{padding:7px 10px}
+  .card .cell.hero b{font-size:28px}
+  .card .cell b{font-size:20px}
+  .btn{min-height:46px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;
+    animation-iteration-count:1!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<main class="app" id="app" aria-roledescription="carousel" aria-label="Rider Rewind 2026">
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <div class="topbar">
+    <div class="brand" aria-hidden="true">zomato<small>Rider Rewind</small></div>
+    <div class="controls">
+      <button class="chip lang" id="langBtn" type="button"></button>
+      <button class="chip icon" id="pauseBtn" type="button"></button>
+    </div>
+  </div>
+
+  <button class="tap tap-prev" id="tapPrev" type="button"></button>
+  <button class="tap tap-next" id="tapNext" type="button"></button>
+
+  <div class="stage" id="stage"></div>
+  <div class="paused-badge" id="pausedBadge" aria-hidden="true"></div>
+  <div class="sr-only" id="live" aria-live="polite"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</main>
+
+<script>
+'use strict';
+/* =====================================================================
+   1. DATA  —  ⚠️  SYNTHETIC MOCK DATA ONLY  ⚠️
+   ---------------------------------------------------------------------
+   These profiles are invented for design/testing. No real Delivery
+   Partner names, phone numbers, IDs or earnings are used.
+
+   Switch profile via URL hash:  #new  |  #avg (default)  |  #pro
+
+   TO USE REAL DATA: replace DP_DATA with your API response (same shape),
+   e.g.  const DP_DATA = await (await fetch('/api/rewind')).json();
+   Every field is optional except `name`; normalise() below cleans the
+   input and any slide whose data is missing is skipped automatically.
+
+   Shape:
+   {
+     name, city, year,
+     loginHours,            // total hours online in the year
+     activeDays,            // days with ≥1 login (used for "usual day" maths)
+     orders,                // total orders delivered
+     distanceKm,            // total km travelled on orders
+     earnings: { base, incentives, tips },   // ₹, integers
+     bestDay: { date:'YYYY-MM-DD', orders, earnings },
+     hourlyDistribution,    // 24 numbers, index 0 = 12–1 AM (counts or weights)
+     topItems: [{ name, count }],            // up to 3 used
+     topZone: { name, orders },
+     streak,                // longest run of consecutive active days
+     rating                 // average customer rating, 0–5
+   }
+   ===================================================================== */
+const MOCK_PROFILES = {
+  /* Average rider: full data, mid-range numbers */
+  avg: {
+    name: 'Ravi K.', city: 'Bengaluru', year: 2026,
+    loginHours: 2140, activeDays: 286, orders: 6420, distanceKm: 31850,
+    earnings: { base: 312400, incentives: 68500, tips: 14250 },
+    bestDay: { date: '2026-10-24', orders: 41, earnings: 3680 },
+    hourlyDistribution: [40,18,6,2,1,3,25,90,160,210,240,420,610,540,320,240,300,390,560,760,830,650,380,130],
+    topItems: [ { name: 'Chicken Biryani', count: 842 }, { name: 'Masala Dosa', count: 511 }, { name: 'Paneer Butter Masala', count: 377 } ],
+    topZone: { name: 'Koramangala', orders: 2310 },
+    streak: 47, rating: 4.8
+  },
+  /* New rider: joined late in the year, small numbers, many fields missing */
+  new: {
+    name: 'Simran', city: 'Indore', year: 2026,
+    loginHours: 46, activeDays: 9, orders: 92, distanceKm: 410,
+    earnings: { base: 6800, incentives: 0, tips: 120 },
+    // bestDay, hourlyDistribution, topZone, streak, rating intentionally missing
+    topItems: [ { name: 'Poha', count: 14 } ]
+  },
+  /* Power rider: big numbers, night owl */
+  pro: {
+    name: 'Arjun Deshmukh', city: 'Mumbai', year: 2026,
+    loginHours: 3480, activeDays: 341, orders: 14250, distanceKm: 68400,
+    earnings: { base: 598000, incentives: 162500, tips: 38900 },
+    bestDay: { date: '2026-12-31', orders: 63, earnings: 6450 },
+    hourlyDistribution: [520,410,240,90,30,10,15,40,80,120,160,300,420,380,220,180,260,350,520,700,820,880,940,910],
+    topItems: [ { name: 'Vada Pav', count: 1630 }, { name: 'Margherita Pizza', count: 1204 }, { name: 'Butter Chicken', count: 988 } ],
+    topZone: { name: 'Andheri West', orders: 4980 },
+    streak: 112, rating: 4.9
+  }
+};
+const DP_DATA = MOCK_PROFILES[location.hash.slice(1)] || MOCK_PROFILES.avg;
+
+/* Clean + validate any input so the renderer can trust it.
+   Invalid / zero / missing values become null and their slides are skipped. */
+function normalise(raw) {
+  const r = raw || {};
+  const num = v => (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
+  const str = v => (typeof v === 'string' && v.trim()) ? v.trim() : null;
+  const e = r.earnings || {};
+  const earnings = { base: num(e.base) || 0, incentives: num(e.incentives) || 0, tips: num(e.tips) || 0 };
+  earnings.total = (earnings.base + earnings.incentives + earnings.tips) || null;
+
+  let bestDay = null;
+  const bd = r.bestDay;
+  if (bd && /^\d{4}-\d{2}-\d{2}$/.test(bd.date || '') && (num(bd.orders) || num(bd.earnings))) {
+    const [y, m, d] = bd.date.split('-').map(Number);
+    bestDay = { date: new Date(y, m - 1, d), orders: num(bd.orders), earnings: num(bd.earnings) };
+  }
+  const hd = Array.isArray(r.hourlyDistribution) && r.hourlyDistribution.length === 24 &&
+             r.hourlyDistribution.some(v => num(v)) ? r.hourlyDistribution.map(v => num(v) || 0) : null;
+  const items = Array.isArray(r.topItems)
+    ? r.topItems.filter(i => i && str(i.name)).map(i => ({ name: str(i.name), count: num(i.count) })).slice(0, 3) : [];
+  const zone = r.topZone && str(r.topZone.name) ? { name: str(r.topZone.name), orders: num(r.topZone.orders) } : null;
+  const rating = num(r.rating) && r.rating <= 5 ? r.rating : null;
+
+  return {
+    name: str(r.name) || 'Rider', city: str(r.city), year: num(r.year) || new Date().getFullYear(),
+    loginHours: num(r.loginHours), activeDays: num(r.activeDays), orders: num(r.orders),
+    distanceKm: num(r.distanceKm), earnings, bestDay, hourlyDistribution: hd,
+    topItems: items.length ? items : null, topZone: zone, streak: num(r.streak), rating
+  };
+}
+const D = normalise(DP_DATA);
+
+/* =====================================================================
+   2. CONFIG: comparisons, personas, food captions, palettes, copy
+   ---------------------------------------------------------------------
+   COMPARISONS — edit freely. For each stat, the engine:
+     1. keeps entries whose `threshold` ≤ value (< `max` if given)
+        and whose optional `needs(data)` is truthy,
+     2. computes n = formula(value, data),
+     3. picks the entry whose n falls inside its `sweet` range
+        [lo, hi] (default [1.5, 40]); else the one closest to it.
+     Ties go to the entry listed first, so order = priority.
+   `fmt`: 'dec' (smart rounding) | 'int' | 'floor' | 'pct' | 'x' (1 decimal)
+   Reference figures are approximate and for fun only.
+   ===================================================================== */
+const COMPARISONS = [
+  /* ---- Distance (km) ---- */
+  { stat:'distanceKm', threshold:40075, sweet:[1,40], fmt:'dec', emoji:'🌍', formula:v => v / 40075,        // Earth's circumference
+    en:'You rode around the Earth {n} times. Literally world-class!',
+    hi:'Aapne poori duniya ke {n} chakkar laga diye. Sach mein world-class!' },
+  { stat:'distanceKm', threshold:15000, max:40075, sweet:[35,99], fmt:'pct', emoji:'🌏', formula:v => v / 40075 * 100,
+    en:'That’s {n}% of the way around the Earth!',
+    hi:'Yeh poori duniya ke ek chakkar ka {n}% hai!' },
+  { stat:'distanceKm', threshold:5000, fmt:'dec', emoji:'🏝️', formula:v => v / 6000,                       // ~Delhi → Sri Lanka & back
+    en:'Like riding to Sri Lanka and back {n} times!',
+    hi:'Sri Lanka jaake wapas aane jaisa — {n} baar!' },
+  { stat:'distanceKm', threshold:1400, fmt:'dec', emoji:'🛣️', formula:v => v / 1400,                      // ~Delhi → Mumbai by road
+    en:'Enough to drive Delhi → Mumbai {n} times.',
+    hi:'Itne mein Delhi se Mumbai {n} baar pahunch jaate!' },
+  { stat:'distanceKm', threshold:590, fmt:'dec', emoji:'🏖️', formula:v => v / 590,                        // ~Mumbai → Goa by road
+    en:'That’s {n} road trips from Mumbai to Goa!',
+    hi:'Yeh Mumbai se Goa ki {n} road trips hain!' },
+  { stat:'distanceKm', threshold:230, fmt:'dec', emoji:'🕌', formula:v => v / 230,                        // ~Delhi → Agra
+    en:'Like driving Delhi → Agra {n} times just to see the Taj!',
+    hi:'Taj dekhne Delhi se Agra {n} baar jaa sakte the!' },
+  { stat:'distanceKm', threshold:0, fmt:'dec', emoji:'🏔️', formula:v => v / 8.849,                        // Everest height
+    en:'Stack Mount Everest {n} times — that’s how far you rode!',
+    hi:'{n} Mount Everest ek ke upar ek rakho — itna chale aap!' },
+
+  /* ---- Login hours ---- */
+  { stat:'loginHours', threshold:260, fmt:'dec', emoji:'🏏', formula:v => v / 260,                        // ~74 matches × 3.5 h
+    en:'You could have watched {n} full IPL seasons — every single match!',
+    hi:'Itne mein {n} poore IPL season dekh lete — har ek match!' },
+  { stat:'loginHours', threshold:70, fmt:'dec', emoji:'📺', formula:v => v / 70,                          // ~94 episodes
+    en:'That’s the entire Mahabharat TV serial, {n} times over!',
+    hi:'Poora Mahabharat TV serial {n} baar dekh lete!' },
+  { stat:'loginHours', threshold:24, fmt:'dec', emoji:'😴', formula:v => v / 24,
+    en:'That’s {n} full days without a single nap!',
+    hi:'Yeh {n} din bina soye kaam karne jaisa hai!' },
+  { stat:'loginHours', threshold:0, fmt:'dec', emoji:'🎬', formula:v => v / 5.5,                          // Baahubali 1 + 2 runtime
+    en:'Equal to {n} back-to-back Baahubali 1 + 2 marathons!',
+    hi:'Yeh {n} Baahubali 1 + 2 marathon ke barabar hai!' },
+
+  /* ---- Orders ---- */
+  { stat:'orders', threshold:3300, sweet:[10,100], fmt:'pct', emoji:'🏟️', formula:v => v / 33000 * 100,  // ~Wankhede capacity
+    en:'Enough biryani to feed {n}% of a packed Wankhede Stadium!',
+    hi:'Itni biryani se bhare Wankhede Stadium ke {n}% logon ka pet bhar jaaye!' },
+  { stat:'orders', threshold:0, sweet:[3,90], fmt:'int', emoji:'⏱️', needs:d => d.loginHours,
+    formula:(v, d) => d.loginHours * 60 / v,
+    en:'That’s one order every {n} minutes you were online!',
+    hi:'Online rehte hue har {n} minute mein ek order!' },
+  { stat:'orders', threshold:22, fmt:'int', emoji:'🏏', formula:v => v / 11,
+    en:'Enough meals to feed {n} full cricket teams!',
+    hi:'Itne khaane se {n} poori cricket teams ka pet bhar jaaye!' },
+
+  /* ---- Earnings (₹ total) ---- */
+  { stat:'earnings', threshold:80000, fmt:'floor', emoji:'📱', formula:v => v / 80000,                   // ~₹80k phone
+    en:'That’s {n} brand-new iPhones worth of hustle!',
+    hi:'Itne mein {n} naye iPhone aa jaayein!' },
+  { stat:'earnings', threshold:25000, fmt:'floor', emoji:'🏖️', formula:v => v / 25000,                  // ~₹25k trip
+    en:'Or {n} Goa trips with the whole gang!',
+    hi:'Ya poori gang ke saath {n} Goa trips!' },
+  { stat:'earnings', threshold:298, fmt:'int', emoji:'🍿', formula:v => v / 149,                         // ~₹149/month plan
+    en:'That’s {n} months of a Netflix mobile plan!',
+    hi:'Itne mein {n} mahine ka Netflix mobile plan!' },
+  { stat:'earnings', threshold:0, sweet:[100,1e9], fmt:'dec', emoji:'☕', formula:v => v / 10,
+    en:'Or {n} cutting chais at ₹10 each!',
+    hi:'Ya ₹10 wali {n} cutting chai!' },
+
+  /* ---- Best day vs. average day ---- */
+  { stat:'bestDay', threshold:0, sweet:[1.2,100], fmt:'x', emoji:'🚀',
+    needs:d => d.activeDays && d.earnings.total && d.bestDay.earnings,
+    formula:(v, d) => d.bestDay.earnings / (d.earnings.total / d.activeDays),
+    en:'That’s {n}x your usual day. Full power mode!',
+    hi:'Yeh aapke normal din se {n}x zyada tha. Full power mode!' },
+  { stat:'bestDay', threshold:0, sweet:[1.2,100], fmt:'x', emoji:'⚡',
+    needs:d => d.activeDays && d.orders && d.bestDay.orders,
+    formula:(v, d) => d.bestDay.orders / (d.orders / d.activeDays),
+    en:'{n}x more orders than your usual day!',
+    hi:'Normal din se {n}x zyada orders!' }
+];
+
+/* How to read a stat's headline value from the data */
+const STAT_VALUE = {
+  distanceKm: d => d.distanceKm,
+  loginHours: d => d.loginHours,
+  orders:     d => d.orders,
+  earnings:   d => d.earnings.total,
+  bestDay:    d => d.bestDay && (d.bestDay.earnings || d.bestDay.orders)
+};
+
+/* Time-of-day personas. The peak hour in hourlyDistribution picks one. */
+const PERSONAS = [
+  { id:'night',   hours:[22,23,0,1,2,3,4], emoji:'🌙', name:{ en:'Raat ka Raja',        hi:'Raat ka Raja' },
+    desc:{ en:'When the city craved midnight Maggi, you answered.', hi:'Sheher ko aadhi raat Maggi chahiye thi, aur aap haazir the.' },
+    palette:{ bg1:'#0B1D51', bg2:'#03081F', ink:'#FFFFFF', accent:'#FFB703', blob:'#3A86FF', dark:true } },
+  { id:'early',   hours:[5,6,7,8,9,10],    emoji:'🌅', name:{ en:'Morning Superstar',   hi:'Subah ka Superstar' },
+    desc:{ en:'While the city slept in, you delivered breakfast.', hi:'Sheher so raha tha, aap nashta pahuncha rahe the.' },
+    palette:{ bg1:'#BDEBFF', bg2:'#6CC4EE', ink:'#062A3A', accent:'#7A1020', blob:'#FFFFFF', dark:false } },
+  { id:'lunch',   hours:[11,12,13,14,15],  emoji:'🍱', name:{ en:'Lunch Rush Hero',     hi:'Lunch Rush Hero' },
+    desc:{ en:'Half the offices in town owe their lunch break to you.', hi:'Aadhe sheher ka lunch break aapke bharose tha.' },
+    palette:{ bg1:'#FFE066', bg2:'#FFB703', ink:'#2B0A12', accent:'#8E1023', blob:'#FFFFFF', dark:false } },
+  { id:'evening', hours:[16,17,18],        emoji:'☕', name:{ en:'Evening Snack Sultan', hi:'Shaam ka Sultan' },
+    desc:{ en:'Chai-samosa o’clock was your prime time.', hi:'Chai-samose ka time = aapka time.' },
+    palette:{ bg1:'#FFB38A', bg2:'#F7845E', ink:'#2B0A12', accent:'#6E0A1B', blob:'#FFE066', dark:false } },
+  { id:'dinner',  hours:[19,20,21],        emoji:'🍛', name:{ en:'Dinner Dhamaka',      hi:'Dinner Dhamaka' },
+    desc:{ en:'Prime-time dinners were your big stage.', hi:'Dinner ka prime time, aapka bada stage.' },
+    palette:{ bg1:'#5B1A8E', bg2:'#22063A', ink:'#FFFFFF', accent:'#FF8FB1', blob:'#B5179E', dark:true } }
+];
+
+/* Quirky captions for the #1 item. First regex match wins; last is the fallback. */
+const ITEM_CAPTIONS = [
+  { match:/biryani/i,  en:'Biryani isn’t food, it’s an emotion — and you delivered it {n} times.', hi:'Biryani khaana nahi, emotion hai — aur aapne {n} baar deliver kiya.' },
+  { match:/pizza/i,    en:'{n} pizzas. You’re basically the city’s cheese pipeline.', hi:'{n} pizza! Aap toh sheher ki cheese pipeline ho.' },
+  { match:/dosa|idli/i,en:'Crispy, golden, always on time — just like you.', hi:'Crispy, golden aur hamesha time pe — bilkul aapki tarah.' },
+  { match:/vada ?pav/i,en:'Mumbai’s burger needed Mumbai’s hero. Enter: you.', hi:'Mumbai ke burger ko Mumbai ka hero chahiye tha — yaani aap.' },
+  { match:/momo/i,     en:'Steamed, fried or tandoori — you delivered every momo mood.', hi:'Steamed, fried ya tandoori — har momo mood aapne pahunchaaya.' },
+  { match:/chai|coffee/i, en:'You kept the city awake, one cup at a time.', hi:'Ek-ek cup se aapne sheher ko jagaaye rakha.' },
+  { match:/poha|paratha/i, en:'Breakfast of champions, delivered by a champion.', hi:'Champions ka nashta, champion ke haathon.' },
+  { match:/.*/,        en:'{item} fans owe you one. Big time.', hi:'{item} ke fans aapke karzdaar hain!' }
+];
+
+/* Slide palettes. Small text always sits on the darker/lighter side so
+   contrast stays ≥ 4.5:1; huge numbers use the accent colour (≥ 3:1). */
+const PAL = {
+  intro:    { bg1:'#C81E3A', bg2:'#6E0A1B', ink:'#FFFFFF', accent:'#FFD23F', blob:'#E23744', dark:true },
+  hours:    { bg1:'#3A0CA3', bg2:'#16043F', ink:'#FFFFFF', accent:'#FF8FD8', blob:'#7209B7', dark:true },
+  orders:   { bg1:'#FFD166', bg2:'#FF9F1C', ink:'#2B0A12', accent:'#8E1023', blob:'#E23744', dark:false },
+  distance: { bg1:'#067A7A', bg2:'#043049', ink:'#FFFFFF', accent:'#9BF6FF', blob:'#00C2A8', dark:true },
+  earnings: { bg1:'#0B6E4F', bg2:'#04261C', ink:'#FFFFFF', accent:'#B7F171', blob:'#2DC653', dark:true },
+  best:     { bg1:'#9D1A8A', bg2:'#3A0535', ink:'#FFFFFF', accent:'#FFD23F', blob:'#F72585', dark:true },
+  food:     { bg1:'#FFF1E6', bg2:'#FFC9A3', ink:'#3D0814', accent:'#C81E3A', blob:'#E23744', dark:false },
+  zone:     { bg1:'#1D4ED8', bg2:'#0A1A4F', ink:'#FFFFFF', accent:'#7DF9FF', blob:'#4CC9F0', dark:true },
+  rating:   { bg1:'#7A0C1E', bg2:'#1F070C', ink:'#FFFFFF', accent:'#FFD23F', blob:'#E23744', dark:true },
+  summary:  { bg1:'#2A0A10', bg2:'#0E0306', ink:'#FFFFFF', accent:'#E23744', blob:'#E23744', dark:true }
+};
+
+/* UI copy. {placeholders} are filled at render time. */
+const STR = {
+  'ui.toLang':     { en:'Switch language to Hinglish', hi:'Switch language to English' },
+  'ui.pause':      { en:'Pause story', hi:'Story rokein' },
+  'ui.play':       { en:'Play story', hi:'Story chalayein' },
+  'ui.prev':       { en:'Previous slide', hi:'Pichhli slide' },
+  'ui.next':       { en:'Next slide', hi:'Agli slide' },
+  'ui.paused':     { en:'❚❚ Paused', hi:'❚❚ Ruka hua' },
+  'ui.story':      { en:'Your Rider Rewind story', hi:'Aapki Rider Rewind story' },
+
+  'intro.kicker':  { en:'Rider Rewind', hi:'Rider Rewind' },
+  'intro.title':   { en:'Your {year} on Zomato', hi:'Aapka {year}, Zomato ke saath' },
+  'intro.sub':     { en:'{name}, you owned the streets of {city} this year. Let’s rewind!', hi:'{name}, is saal {city} ki sadkon pe aapka raaj tha. Chalo, rewind karte hain!' },
+  'intro.subNoCity':{ en:'{name}, you showed up all year. Let’s rewind!', hi:'{name}, aap poore saal date rahe. Chalo, rewind karte hain!' },
+  'intro.tag':     { en:'You worked hard. We remember.', hi:'Aapne mehnat ki, hum yaad rakhte hain.' },
+  'intro.hint':    { en:'Tap to begin →', hi:'Shuru karne ke liye tap karein →' },
+
+  'hours.kicker':  { en:'⏱ Time online', hi:'⏱ Online time' },
+  'hours.unit':    { en:'hours online', hi:'ghante online' },
+  'hours.line':    { en:'About {avg} hours a day, across {days} active days.', hi:'{days} din kaam kiya, roz lagbhag {avg} ghante.' },
+  'hours.lineAlt': { en:'Every hour, someone’s dinner was on its way.', hi:'Har ghante, kisi ka khaana raste mein tha.' },
+
+  'orders.kicker': { en:'📦 Orders delivered', hi:'📦 Orders deliver kiye' },
+  'orders.unit':   { en:'orders, delivered with a smile', hi:'orders, muskaan ke saath' },
+  'orders.line':   { en:'Every single one was somebody’s happy moment.', hi:'Har ek order kisi ke chehre ki muskaan tha.' },
+
+  'dist.kicker':   { en:'🛵 Distance travelled', hi:'🛵 Kitna safar kiya' },
+  'dist.unit':     { en:'kilometres on the road', hi:'kilometre ka safar' },
+  'dist.line':     { en:'Rain, traffic, potholes — nothing stopped you.', hi:'Baarish, traffic, gaddhe — kuch nahi rok paaya aapko.' },
+
+  'earn.kicker':   { en:'💰 You earned', hi:'💰 Aapki kamaai' },
+  'earn.line':     { en:'Your hard work, in rupees.', hi:'Aapki mehnat, rupaiyon mein.' },
+  'earn.base':     { en:'Delivery pay', hi:'Delivery pay' },
+  'earn.incentives':{ en:'Incentives', hi:'Incentives' },
+  'earn.tips':     { en:'Customer tips', hi:'Customer tips' },
+
+  'best.kicker':   { en:'🏆 Your best day', hi:'🏆 Aapka sabse best din' },
+  'best.orders':   { en:'orders that day', hi:'orders us din' },
+  'best.earned':   { en:'earned that day', hi:'us din ki kamaai' },
+
+  'persona.kicker':{ en:'⏰ Your rush-hour persona', hi:'⏰ Aapka rush-hour avatar' },
+  'persona.peak':  { en:'Peak hour: {hour}.', hi:'Peak time: {hour}.' },
+
+  'food.kicker':   { en:'🍽 Most delivered', hi:'🍽 Sabse zyada deliver hua' },
+  'food.title':    { en:'{city}’s favourite cravings', hi:'{city} ki favourite cravings' },
+  'food.titleAlt': { en:'Your top deliveries', hi:'Aapki top deliveries' },
+  'food.times':    { en:'{n}×', hi:'{n} baar' },
+
+  'zone.kicker':   { en:'📍 Your home turf', hi:'📍 Aapka apna ilaaka' },
+  'zone.line':     { en:'{n} deliveries here — {pct}% of all your orders. The whole area knows you by now!', hi:'Yahan {n} deliveries — aapke total orders ka {pct}%. Ab toh poora ilaaka aapko pehchaanta hoga!' },
+  'zone.lineN':    { en:'{n} deliveries here. The whole area knows you by now!', hi:'Yahan {n} deliveries. Ab toh poora ilaaka aapko pehchaanta hoga!' },
+  'zone.lineAlt':  { en:'You know every gali here by heart.', hi:'Yahan ki har gali aapko zubaani yaad hai.' },
+
+  'rate.kicker':   { en:'🔥 Consistency & love', hi:'🔥 Consistency aur pyaar' },
+  'rate.unit':     { en:'day streak', hi:'din lagaataar' },
+  'rate.line':     { en:'Your longest run of back-to-back working days. Unstoppable!', hi:'Lagaataar kaam ka aapka sabse lamba record. Rukna mana hai!' },
+  'rate.rating':   { en:'customer rating', hi:'customer rating' },
+  'rate.love':     { en:'Customers loved you!', hi:'Customers ko aap bahut pasand aaye!' },
+
+  'sum.kicker':    { en:'Your year, in one card', hi:'Poora saal, ek card mein' },
+  'sum.title':     { en:'My {year} on Zomato', hi:'Mera {year}, Zomato ke saath' },
+  'sum.earned':    { en:'earned this year', hi:'is saal ki kamaai' },
+  'sum.orders':    { en:'orders', hi:'orders' },
+  'sum.hours':     { en:'hours online', hi:'ghante online' },
+  'sum.km':        { en:'km travelled', hi:'km safar' },
+  'sum.rating':    { en:'rating', hi:'rating' },
+  'sum.streak':    { en:'day streak', hi:'din lagaataar' },
+  'sum.download':  { en:'Download', hi:'Download' },
+  'sum.downloadL': { en:'Download summary card as image', hi:'Summary card image download karein' },
+  'sum.share':     { en:'Share', hi:'Share' },
+  'sum.shareL':    { en:'Share summary card', hi:'Summary card share karein' },
+  'sum.replay':    { en:'↺ Watch again', hi:'↺ Phir se dekhein' },
+  'share.title':   { en:'My Rider Rewind {year}', hi:'Mera Rider Rewind {year}' },
+  'share.text':    { en:'My {year} on Zomato: {stats}! #RiderRewind', hi:'Mera {year} Zomato ke saath: {stats}! #RiderRewind' },
+  'toast.saved':   { en:'Image saved!', hi:'Image save ho gayi!' },
+  'toast.copied':  { en:'Copied — paste it anywhere!', hi:'Copy ho gaya — kahin bhi paste karein!' },
+  'toast.fail':    { en:'Couldn’t create the image. Are you offline?', hi:'Image nahi ban paayi. Kya internet band hai?' },
+  'toast.noShare': { en:'Sharing isn’t supported here.', hi:'Yahan share nahi ho sakta.' }
+};
+
+/* =====================================================================
+   3. HELPERS: i18n, formatting, comparison engine
+   ===================================================================== */
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SLIDE_MS = 6000;
+const H2C_URL = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+
+let LANG = (() => { try { return localStorage.getItem('rr-lang') === 'hi' ? 'hi' : 'en'; } catch (e) { return 'en'; } })();
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => vars[k] != null ? vars[k] : m);
+const t = (key, vars = {}) => fill((STR[key] && (STR[key][LANG] || STR[key].en)) || key, vars);
+const pick = obj => obj[LANG] || obj.en;
+
+const INR = new Intl.NumberFormat('en-IN');                       // Indian grouping: 1,25,000
+const fmtInt = n => INR.format(Math.round(n));
+const fmtRs  = n => '₹' + fmtInt(n);
+const trim0  = s => s.replace(/\.0$/, '');
+
+/* Round "sensibly": big numbers to 3 significant figures, small ones to 1 decimal. */
+function niceNum(n) {
+  if (n >= 1000) { const p = Math.pow(10, Math.floor(Math.log10(n)) - 2); return fmtInt(Math.round(n / p) * p); }
+  if (n >= 20) return fmtInt(n);
+  if (n >= 1)  return trim0(n.toFixed(1));
+  return trim0(n.toFixed(2));
+}
+function formatN(n, fmt) {
+  switch (fmt) {
+    case 'int':   return fmtInt(n);
+    case 'floor': return fmtInt(Math.floor(n));
+    case 'pct':   return String(Math.round(n));
+    case 'x':     return n < 10 ? trim0(n.toFixed(1)) : fmtInt(n);
+    default:      return niceNum(n);
+  }
+}
+
+/* The comparison engine: best-fitting comparison for a stat, or null. */
+function pickComparison(stat, d) {
+  const v = STAT_VALUE[stat] && STAT_VALUE[stat](d);
+  if (!v) return null;
+  let best = null;
+  COMPARISONS.forEach(c => {
+    if (c.stat !== stat || v < (c.threshold || 0)) return;
+    if (c.max != null && v >= c.max) return;
+    if (c.needs && !c.needs(d)) return;
+    let n; try { n = c.formula(v, d); } catch (e) { return; }
+    if (!isFinite(n) || n <= 0) return;
+    if ((c.fmt === 'floor' || c.fmt === 'int') && Math.round(n) < 1) return;
+    const [lo, hi] = c.sweet || [1.5, 40];
+    const score = n < lo ? Math.log10(lo / n) : n > hi ? Math.log10(n / hi) : 0;
+    if (!best || score < best.score) best = { c, n, score };
+  });
+  if (!best) return null;
+  return { emoji: best.c.emoji, text: fill(pick(best.c), { n: formatN(best.n, best.c.fmt) }) };
+}
+
+function computePersona(d) {
+  const h = d.hourlyDistribution;
+  if (!h) return null;
+  const peak = h.indexOf(Math.max(...h));
+  const p = PERSONAS.find(p => p.hours.includes(peak));
+  return p ? { ...p, peak } : null;
+}
+
+function fmtHour(h) {
+  const h12 = (h % 12) || 12;
+  if (LANG === 'hi') {
+    const part = h >= 5 && h < 12 ? 'subah' : h >= 12 && h < 16 ? 'dopahar' : h >= 16 && h < 20 ? 'shaam' : 'raat';
+    return `${part} ${h12} baje`;
+  }
+  return `${h12} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+/* =====================================================================
+   4. SLIDE RENDERER
+   Each slide: { id, label, palette, when(d), render(d), confetti?, mount? }
+   `when` returning false skips the slide (missing data).
+   ===================================================================== */
+const blobs = `<div class="blob b1" aria-hidden="true"></div><div class="blob b2" aria-hidden="true"></div>`;
+const sparks = (n = 6) => Array.from({ length: n }, (_, i) =>
+  `<span class="spark" aria-hidden="true" style="top:${8 + (i * 37) % 80}%;left:${(i * 53 + 11) % 92}%;--dl:${(i * .4).toFixed(1)}s">✦</span>`).join('');
+const rise = d => `class="rise" style="--d:${d}s"`;
+
+/* Huge animated number. Visual text is aria-hidden; screen readers get the final value. */
+function bigNum(value, fmt = 'int', delay = .15, extra = '') {
+  const final = fmt === 'inr' ? fmtRs(value) : fmt === 'dec1' ? value.toFixed(1) : fmtInt(value);
+  return `<div class="big fit rise pop ${extra}" style="--d:${delay}s" data-count="${value}" data-fmt="${fmt}" data-final="${esc(final)}" aria-hidden="true">${esc(final)}</div>
+          <span class="sr-only">${esc(final)}</span>`;
+}
+function compareBox(cmp, delay = .7) {
+  if (!cmp) return '';
+  return `<div class="compare rise" style="--d:${delay}s"><span class="emo" aria-hidden="true">${cmp.emoji}</span><span>${esc(cmp.text)}</span></div>`;
+}
+function starRow(r) {
+  return `<span class="stars" aria-hidden="true"><span class="base">★★★★★</span><span class="fill" style="--w:${(r / 5 * 100).toFixed(0)}%">★★★★★</span></span>`;
+}
+
+const SLIDES = [
+  /* 1. Intro */
+  { id:'intro', label:'intro.kicker', palette:PAL.intro, confetti:true, when:() => true,
+    render:d => `${blobs}${sparks(7)}
+      <p class="kicker rise">${t('intro.kicker')}</p>
+      <div class="big fit rise pop" style="--d:.1s" data-max="150" data-final="${d.year}" aria-hidden="true">${d.year}</div>
+      <h1 class="title" ${rise(.3)}>${t('intro.title', { year: d.year })}</h1>
+      <p class="line" ${rise(.45)}>${t(d.city ? 'intro.sub' : 'intro.subNoCity', { name: `<b>${esc(d.name)}</b>`, city: esc(d.city) })}</p>
+      <p class="tagline" ${rise(.65)}>“${t('intro.tag')}”</p>
+      <p class="hint" ${rise(1.1)}>${t('intro.hint')}</p>` },
+
+  /* 2. Login hours */
+  { id:'hours', label:'hours.kicker', palette:PAL.hours, when:d => d.loginHours,
+    render:d => `${blobs}
+      <p class="kicker rise">${t('hours.kicker')}</p>
+      ${bigNum(d.loginHours)}
+      <p class="unit" ${rise(.3)}>${t('hours.unit')}</p>
+      <p class="line" ${rise(.45)}>${d.activeDays
+        ? t('hours.line', { avg: trim0((d.loginHours / d.activeDays).toFixed(1)), days: fmtInt(d.activeDays) })
+        : t('hours.lineAlt')}</p>
+      ${compareBox(pickComparison('loginHours', d))}` },
+
+  /* 3. Orders */
+  { id:'orders', label:'orders.kicker', palette:PAL.orders, when:d => d.orders,
+    render:d => `${blobs}
+      <p class="kicker rise">${t('orders.kicker')}</p>
+      ${bigNum(d.orders)}
+      <p class="unit" ${rise(.3)}>${t('orders.unit')}</p>
+      <p class="line" ${rise(.45)}>${t('orders.line')}</p>
+      ${compareBox(pickComparison('orders', d))}` },
+
+  /* 4. Distance */
+  { id:'distance', label:'dist.kicker', palette:PAL.distance, when:d => d.distanceKm,
+    render:d => `${blobs}
+      <p class="kicker rise">${t('dist.kicker')}</p>
+      ${bigNum(d.distanceKm)}
+      <p class="unit" ${rise(.3)}>${t('dist.unit')}</p>
+      <p class="line" ${rise(.45)}>${t('dist.line')}</p>
+      ${compareBox(pickComparison('distanceKm', d))}` },
+
+  /* 5. Earnings */
+  { id:'earnings', label:'earn.kicker', palette:PAL.earnings, confetti:true, when:d => d.earnings.total,
+    render:d => {
+      const e = d.earnings, parts = [
+        { k:'earn.base', v:e.base, c:'#B7F171' },
+        { k:'earn.incentives', v:e.incentives, c:'#FFD23F' },
+        { k:'earn.tips', v:e.tips, c:'#7DF9FF' }
+      ].filter(p => p.v > 0);
+      return `${blobs}${sparks(5)}
+        <p class="kicker rise">${t('earn.kicker')}</p>
+        ${bigNum(e.total, 'inr')}
+        <p class="line" ${rise(.3)}>${t('earn.line')}</p>
+        <div ${rise(.4)}>
+          <div class="split" aria-hidden="true">${parts.map(p => `<span style="width:${p.v / e.total * 100}%;background:${p.c}"></span>`).join('')}</div>
+        </div>
+        <div class="legend" ${rise(.5)}>${parts.map(p =>
+          `<div><span><i class="dot" style="background:${p.c}"></i>${t(p.k)}</span><b>${fmtRs(p.v)}</b></div>`).join('')}</div>
+        ${compareBox(pickComparison('earnings', d), .8)}`;
+    } },
+
+  /* 6. Best day */
+  { id:'best', label:'best.kicker', palette:PAL.best, confetti:true, when:d => d.bestDay,
+    render:d => {
+      const b = d.bestDay;
+      const dateStr = b.date.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+      const wk = b.date.toLocaleDateString('en-IN', { weekday:'long' });
+      const tiles = [
+        b.orders ? `<div class="tile"><b data-count="${b.orders}" data-fmt="int">${fmtInt(b.orders)}</b><span>${t('best.orders')}</span></div>` : '',
+        b.earnings ? `<div class="tile"><b data-count="${b.earnings}" data-fmt="inr">${fmtRs(b.earnings)}</b><span>${t('best.earned')}</span></div>` : ''
+      ].join('');
+      return `${blobs}${sparks(6)}
+        <p class="kicker rise">${t('best.kicker')}</p>
+        <div class="big fit rise pop" style="--d:.15s" data-max="110" data-final="${esc(dateStr)}">${esc(dateStr)}</div>
+        <p class="unit" ${rise(.3)}>${esc(wk)}</p>
+        <div class="duo" ${rise(.45)}>${tiles}</div>
+        ${compareBox(pickComparison('bestDay', d))}`;
+    } },
+
+  /* 7. Time-of-day persona */
+  { id:'persona', label:'persona.kicker', palette:d => computePersona(d).palette, when:d => computePersona(d),
+    render:d => {
+      const p = computePersona(d), h = d.hourlyDistribution, max = Math.max(...h);
+      return `${blobs}${sparks(p.id === 'night' ? 9 : 4)}
+        <p class="kicker rise">${t('persona.kicker')}</p>
+        <div class="persona-emoji rise pop" style="--d:.1s" aria-hidden="true">${p.emoji}</div>
+        <h1 class="persona-name" ${rise(.25)}>${pick(p.name)}</h1>
+        <p class="line" ${rise(.4)}>${t('persona.peak', { hour: `<b>${fmtHour(p.peak)}</b>` })} ${pick(p.desc)}</p>
+        <div ${rise(.5)}>
+          <div class="hours" aria-hidden="true">${h.map((v, i) =>
+            `<span class="${i === p.peak ? 'peak' : ''}" style="height:${Math.max(4, v / max * 100)}%;--i:${i}"></span>`).join('')}</div>
+          <div class="hours-axis" aria-hidden="true"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span></div>
+        </div>` ;
+    } },
+
+  /* 8. Top food items */
+  { id:'food', label:'food.kicker', palette:PAL.food, when:d => d.topItems,
+    render:d => {
+      const top = d.topItems[0];
+      const cap = ITEM_CAPTIONS.find(c => c.match.test(top.name));
+      const caption = fill(pick(cap), { n: top.count ? fmtInt(top.count) : '', item: top.name });   // escaped by compareBox
+      return `${blobs}
+        <p class="kicker rise">${t('food.kicker')}</p>
+        <h1 class="title" ${rise(.1)}>${d.city ? t('food.title', { city: esc(d.city) }) : t('food.titleAlt')}</h1>
+        <ol class="podium">${d.topItems.map((it, i) => `
+          <li class="rise" style="--d:${.25 + i * .15}s"><span class="rank" aria-hidden="true">${i + 1}</span>
+            <span class="name">${esc(it.name)}</span>
+            ${it.count ? `<span class="cnt">${t('food.times', { n: fmtInt(it.count) })}</span>` : ''}</li>`).join('')}
+        </ol>
+        ${compareBox({ emoji:'😋', text: caption }, .8)}`;
+    } },
+
+  /* 9. Top zone */
+  { id:'zone', label:'zone.kicker', palette:PAL.zone, when:d => d.topZone,
+    render:d => {
+      const z = d.topZone;
+      const line = z.orders && d.orders ? t('zone.line', { n: fmtInt(z.orders), pct: Math.round(z.orders / d.orders * 100) })
+                 : z.orders ? t('zone.lineN', { n: fmtInt(z.orders) }) : t('zone.lineAlt');
+      return `${blobs}${sparks(5)}
+        <p class="kicker rise">${t('zone.kicker')}</p>
+        <div class="big fit rise pop" style="--d:.15s" data-max="80" data-final="${esc(z.name)}">${esc(z.name)}</div>
+        ${d.city ? `<p class="unit" ${rise(.3)}>${esc(d.city)}</p>` : ''}
+        <p class="line" ${rise(.45)}>${line}</p>`;
+    } },
+
+  /* 10. Streak + rating */
+  { id:'rating', label:'rate.kicker', palette:PAL.rating, when:d => d.streak || d.rating,
+    render:d => {
+      const head = d.streak
+        ? `${bigNum(d.streak)}<p class="unit" ${rise(.3)}>${t('rate.unit')}</p><p class="line" ${rise(.4)}>${t('rate.line')}</p>`
+        : `${bigNum(d.rating, 'dec1')}<p class="unit" ${rise(.3)}>${t('rate.rating')}</p>`;
+      const rate = d.rating
+        ? `<div class="tile rise" style="--d:.55s"><b>${d.rating.toFixed(1)} / 5</b>${starRow(d.rating)}
+             <span style="margin-top:8px">${t('rate.love')}</span></div>` : '';
+      return `${blobs}${sparks(6)}<p class="kicker rise">${t('rate.kicker')}</p>${head}${rate}`;
+    } },
+
+  /* 11. Summary card + share/export */
+  { id:'summary', label:'sum.kicker', cls:'summary', palette:PAL.summary, confetti:true, when:() => true,
+    render:d => {
+      const p = computePersona(d), top = d.topItems && d.topItems[0];
+      const cell = (v, l, wide, hero) => `<div class="cell${wide ? ' wide' : ''}${hero ? ' hero' : ''}"><b>${esc(v)}</b><span>${l}</span></div>`;
+      const cells = [];
+      if (d.orders)     cells.push([fmtInt(d.orders), t('sum.orders')]);
+      if (d.loginHours) cells.push([fmtInt(d.loginHours), t('sum.hours')]);
+      if (d.distanceKm) cells.push([fmtInt(d.distanceKm), t('sum.km')]);
+      if (d.rating)     cells.push([d.rating.toFixed(1) + ' ★', t('sum.rating')]);
+      else if (d.streak) cells.push([fmtInt(d.streak), t('sum.streak')]);
+      const grid = (d.earnings.total ? cell(fmtRs(d.earnings.total), t('sum.earned'), true, true) : '') +
+        cells.map((c, i) => cell(c[0], c[1], cells.length % 2 === 1 && i === cells.length - 1)).join('');
+      const tags = [p && `${p.emoji} ${pick(p.name)}`, top && `🍽 ${esc(top.name)}`, d.topZone && `📍 ${esc(d.topZone.name)}`].filter(Boolean);
+      return `${blobs}
+        <p class="kicker rise">${t('sum.kicker')}</p>
+        <div class="card rise pop" style="--d:.1s" id="card">
+          <div class="ring" aria-hidden="true"></div>
+          <div class="ch"><span>Rider Rewind</span><span>${d.year}</span></div>
+          <h2>${t('sum.title', { year: d.year })}</h2>
+          <p class="who">${esc(d.name)}${d.city ? ' · ' + esc(d.city) : ''}</p>
+          <div class="grid">${grid}</div>
+          ${tags.length ? `<div class="tags">${tags.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+          <div class="foot"><span>zomato</span><span>#RiderRewind</span></div>
+        </div>
+        <div class="actions rise" style="--d:.4s">
+          <button class="btn primary interactive" id="dlBtn" type="button" aria-label="${t('sum.downloadL')}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3h2v9.6l3.3-3.3 1.4 1.4L12 16.4l-5.7-5.7 1.4-1.4 3.3 3.3V3zM5 19h14v2H5z"/></svg>${t('sum.download')}</button>
+          <button class="btn ghost interactive" id="shareBtn" type="button" aria-label="${t('sum.shareL')}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16a3 3 0 0 0-2.4 1.2l-6.8-3.4a3 3 0 0 0 0-1.6l6.8-3.4A3 3 0 1 0 15 7c0 .3 0 .5.1.8L8.3 11.2a3 3 0 1 0 0 3.6l6.8 3.4A3 3 0 1 0 18 16z"/></svg>${t('sum.share')}</button>
+        </div>
+        <button class="btn link interactive rise" style="--d:.5s" id="replayBtn" type="button">${t('sum.replay')}</button>`;
+    },
+    mount:el => {
+      el.querySelector('#dlBtn').addEventListener('click', downloadCard);
+      el.querySelector('#shareBtn').addEventListener('click', shareCard);
+      el.querySelector('#replayBtn').addEventListener('click', () => go(0, -1));
+      loadH2C().catch(() => {});   // prefetch library (no user data sent) so Share keeps its user-gesture
+    } }
+];
+
+/* --- DOM effects: fit text, count-up, confetti --- */
+function availWidth(el) {
+  const cs = getComputedStyle(el);
+  return el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+}
+/* Scale .fit elements so their final text fills (but never overflows) the width. */
+function fitText(root) {
+  root.querySelectorAll('.fit').forEach(el => {
+    const max = +el.dataset.max || 96, keep = el.textContent;
+    el.style.fontSize = '100px'; el.style.maxWidth = 'none';   // measure natural width
+    el.textContent = el.dataset.final || keep;
+    const w = el.offsetWidth, avail = availWidth(el.parentElement);
+    el.textContent = keep; el.style.maxWidth = '';
+    if (w > 0) el.style.fontSize = Math.min(max, Math.floor(100 * avail / w * .97)) + 'px';
+  });
+}
+function fmtCount(v, fmt) { return fmt === 'inr' ? fmtRs(v) : fmt === 'dec1' ? v.toFixed(1) : fmtInt(v); }
+function startCounts(root, instant) {
+  root.querySelectorAll('[data-count]').forEach(el => {
+    const target = +el.dataset.count, fmt = el.dataset.fmt;
+    if (instant || REDUCED) { el.textContent = fmtCount(target, fmt); return; }
+    const t0 = performance.now(), dur = 1500;
+    el.textContent = fmtCount(0, fmt);
+    const step = now => {
+      if (!el.isConnected) return;
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmtCount(fmt === 'dec1' ? target * e : Math.round(target * e), fmt);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+function confetti(slideEl, pal) {
+  const box = document.createElement('div');
+  box.className = 'confetti'; box.setAttribute('aria-hidden', 'true');
+  const colors = [pal.accent, '#FFFFFF', '#E23744', '#FFD23F', '#3DDC97', '#4CC9F0'];
+  for (let i = 0; i < 46; i++) {
+    const c = document.createElement('i');
+    c.style.cssText = `left:${Math.random() * 100}%;background:${colors[i % colors.length]};` +
+      `--t:${(2.4 + Math.random() * 1.6).toFixed(2)}s;--dl:${(Math.random() * .5).toFixed(2)}s;` +
+      `--dx:${Math.round(Math.random() * 160 - 80)}px;--r:${Math.round(Math.random() * 720 + 180)}deg;` +
+      (i % 3 === 0 ? 'width:10px;height:10px;border-radius:50%;' : '');
+    box.appendChild(c);
+  }
+  slideEl.prepend(box);
+  setTimeout(() => box.remove(), 4800);
+}
+
+/* =====================================================================
+   5. NAVIGATION + TIMER
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const app = $('app'), stage = $('stage'), progress = $('progress');
+const slides = SLIDES.filter(s => { try { return !!s.when(D); } catch (e) { return false; } });
+let idx = 0, elapsed = 0, lastT = null;
+const paused = new Set();           // reasons: 'hold' | 'user' | 'hidden'
+
+progress.innerHTML = slides.map(() => '<div class="seg"><i></i></div>').join('');
+const fills = [...progress.querySelectorAll('i')];
+
+function paletteOf(s) { return typeof s.palette === 'function' ? s.palette(D) : s.palette; }
+function applyPalette(el, p) {
+  el.style.setProperty('--bg1', p.bg1); el.style.setProperty('--bg2', p.bg2);
+  el.style.setProperty('--ink', p.ink); el.style.setProperty('--accent', p.accent);
+  el.style.setProperty('--blob', p.blob);
+  el.style.setProperty('--card', p.dark ? 'rgba(255,255,255,.13)' : 'rgba(43,10,18,.09)');
+  app.style.setProperty('--chrome', p.ink);
+  app.style.setProperty('--track', p.dark ? 'rgba(255,255,255,.32)' : 'rgba(43,10,18,.25)');
+  app.style.backgroundColor = p.bg2;
+}
+
+/* dir: 1 forward, -1 back, null = re-render in place (language switch) */
+function mount(dir) {
+  const s = slides[idx], pal = paletteOf(s);
+  stage.querySelectorAll('.slide.out-next, .slide.out-prev').forEach(o => o.remove());
+  const old = stage.querySelector('.slide');
+  const el = document.createElement('section');
+  el.className = 'slide' + (s.cls ? ' ' + s.cls : '') + (dir == null ? ' static' : '');
+  el.setAttribute('aria-roledescription', 'slide');
+  el.setAttribute('aria-label', `${idx + 1} / ${slides.length}`);
+  applyPalette(el, pal);
+  el.innerHTML = s.render(D);
+  if (old) {
+    if (dir != null && !REDUCED) {
+      old.classList.add(dir > 0 ? 'out-next' : 'out-prev');
+      el.classList.add(dir > 0 ? 'in-next' : 'in-prev');
+      setTimeout(() => old.remove(), 460);
+    } else old.remove();
+  }
+  stage.appendChild(el);
+  fitText(el);
+  if (s.mount) s.mount(el);
+  if (s.confetti && !REDUCED && dir != null) confetti(el, pal);
+  if (dir == null) startCounts(el, true); else setTimeout(() => startCounts(el), 200);
+  $('live').textContent = `${idx + 1} / ${slides.length}: ${t(s.label).replace(/^\W+\s*/, '')}`;
+}
+
+function go(i, dir) {
+  if (i < 0) { elapsed = 0; return; }           // at first slide: restart its timer
+  if (i >= slides.length) return;               // stay on summary
+  idx = i; elapsed = 0;
+  mount(dir);
+}
+const next = () => go(idx + 1, 1);
+const prev = () => go(idx - 1, -1);
+
+function tick(now) {
+  const dt = lastT == null ? 0 : Math.min(now - lastT, 100);
+  lastT = now;
+  if (!paused.size) {
+    elapsed = Math.min(elapsed + dt, SLIDE_MS);
+    if (elapsed >= SLIDE_MS && idx < slides.length - 1) next();
+  }
+  fills.forEach((f, i) => { f.style.transform = `scaleX(${i < idx ? 1 : i > idx ? 0 : elapsed / SLIDE_MS})`; });
+  requestAnimationFrame(tick);
+}
+
+function setPaused(reason, on) {
+  on ? paused.add(reason) : paused.delete(reason);
+  app.classList.toggle('is-paused', paused.has('user') || paused.has('hold'));
+  updatePauseBtn();
+}
+function updatePauseBtn() {
+  const isOn = paused.has('user');
+  const b = $('pauseBtn');
+  b.setAttribute('aria-label', t(isOn ? 'ui.play' : 'ui.pause'));
+  b.setAttribute('aria-pressed', String(isOn));
+  b.innerHTML = isOn
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+}
+function updateChrome() {
+  document.documentElement.lang = LANG === 'hi' ? 'hi-Latn' : 'en';
+  const lb = $('langBtn');
+  lb.innerHTML = `<span class="${LANG === 'en' ? 'on' : ''}">EN</span>/<span class="${LANG === 'hi' ? 'on' : ''}">HI</span>`;
+  lb.setAttribute('aria-label', t('ui.toLang'));
+  $('tapPrev').setAttribute('aria-label', t('ui.prev'));
+  $('tapNext').setAttribute('aria-label', t('ui.next'));
+  $('pausedBadge').textContent = t('ui.paused');
+  app.setAttribute('aria-label', t('ui.story'));
+  updatePauseBtn();
+}
+
+/* Tap zones: quick tap = navigate, press-and-hold = pause while held. */
+let holdTimer = null, held = false, suppressClick = false;
+function bindTap(btn, action) {
+  btn.addEventListener('pointerdown', e => {
+    if (e.button > 0) return;
+    held = false;
+    holdTimer = setTimeout(() => { held = true; setPaused('hold', true); }, 200);
+  });
+  const end = () => {
+    clearTimeout(holdTimer);
+    if (held) { held = false; suppressClick = true; setPaused('hold', false); }
+  };
+  btn.addEventListener('pointerup', end);
+  btn.addEventListener('pointercancel', end);
+  btn.addEventListener('pointerleave', end);
+  btn.addEventListener('click', () => {           // also fires for keyboard Enter/Space
+    if (suppressClick) { suppressClick = false; return; }
+    action();
+  });
+}
+bindTap($('tapPrev'), prev);
+bindTap($('tapNext'), next);
+app.addEventListener('contextmenu', e => e.preventDefault());
+
+$('pauseBtn').addEventListener('click', () => setPaused('user', !paused.has('user')));
+$('langBtn').addEventListener('click', () => {
+  LANG = LANG === 'en' ? 'hi' : 'en';
+  try { localStorage.setItem('rr-lang', LANG); } catch (e) {}
+  updateChrome();
+  mount(null);                                    // re-render current slide, keep timer
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+  else if ((e.key === ' ' || e.key === 'k') && !(e.target instanceof HTMLButtonElement)) {
+    e.preventDefault(); setPaused('user', !paused.has('user'));
+  }
+});
+document.addEventListener('visibilitychange', () => setPaused('hidden', document.hidden));
+window.addEventListener('hashchange', () => location.reload());   // switch mock profile
+window.addEventListener('resize', () => { const s = stage.querySelector('.slide:last-child'); if (s) fitText(s); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const s = stage.querySelector('.slide:last-child'); if (s) fitText(s); });
+
+/* =====================================================================
+   6. SHARE + EXPORT
+   html2canvas is loaded on demand from cdnjs (pinned 1.4.1). Rendering
+   happens entirely in the browser; no stats are sent anywhere.
+   ===================================================================== */
+let h2cPromise = null;
+function loadH2C() {
+  if (window.html2canvas) return Promise.resolve(window.html2canvas);
+  if (!h2cPromise) h2cPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = H2C_URL; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+    s.onload = () => resolve(window.html2canvas);
+    s.onerror = () => { h2cPromise = null; s.remove(); reject(new Error('html2canvas failed to load')); };
+    document.head.appendChild(s);
+  });
+  return h2cPromise;
+}
+async function cardBlob() {
+  const h2c = await loadH2C();
+  const card = stage.querySelector('.slide:last-child #card');
+  const canvas = await h2c(card, {
+    scale: 2, backgroundColor: null, logging: false, useCORS: false,
+    // Capture the card in its final state even if its entrance animation is still running.
+    onclone: doc => {
+      const c = doc.getElementById('card');
+      for (let n = c; n && n !== doc.body; n = n.parentElement) {
+        n.style.animation = 'none'; n.style.opacity = '1'; n.style.transform = 'none';
+      }
+    }
+  });
+  return new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/png'));
+}
+function fileName() { return `rider-rewind-${D.year}.png`; }
+function shareText() {
+  // Earnings deliberately left out of the default share text; the rider can choose to share the image.
+  const stats = [
+    D.orders && `${fmtInt(D.orders)} orders`,
+    D.distanceKm && `${fmtInt(D.distanceKm)} km`,
+    D.loginHours && `${fmtInt(D.loginHours)} ${LANG === 'hi' ? 'ghante' : 'hours'}`
+  ].filter(Boolean).join(', ');
+  return t('share.text', { year: D.year, stats });
+}
+async function withBusy(btn, fn) {
+  btn.disabled = true; setPaused('user', true);
+  try { await fn(); } finally { btn.disabled = false; }
+}
+function downloadCard(e) {
+  return withBusy(e.currentTarget, async () => {
+    try {
+      const blob = await cardBlob();
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), { href: url, download: fileName() });
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      toast(t('toast.saved'));
+    } catch (err) { toast(t('toast.fail')); }
+  });
+}
+function shareCard(e) {
+  return withBusy(e.currentTarget, async () => {
+    const title = t('share.title', { year: D.year }), text = shareText();
+    try {
+      if (navigator.share) {
+        let file = null;
+        try { file = new File([await cardBlob()], fileName(), { type: 'image/png' }); } catch (err) {}
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title, text });
+        else await navigator.share({ title, text });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        toast(t('toast.copied'));
+      } else toast(t('toast.noShare'));
+    } catch (err) {
+      if (err && err.name !== 'AbortError') toast(t('toast.noShare'));
+    }
+  });
+}
+let toastTimer;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+updateChrome();
+go(0, 1);
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
